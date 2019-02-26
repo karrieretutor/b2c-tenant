@@ -106,6 +106,54 @@ func (t Tenant) callGraphAPI(endpoint string, apiversion string, method string, 
 	return bodyBytes, nil
 }
 
+// CallNewGraphAPI does the API call to the Azure AD Graph API and returns the response as an APIRespone struct
+func (t Tenant) callNewGraphAPI(endpoint string, method string, param string) ([]byte, error) {
+	requestString := "https://graph.microsoft.com/beta" + endpoint
+
+	// fmt.Println(requestString)
+
+	client := &http.Client{}
+
+	if method == "GET" && param != "" {
+		requestString = requestString + "&" + param
+	}
+
+	req, err := http.NewRequest(method, requestString, nil)
+
+	if method == "POST" && param != "" {
+		postReader := strings.NewReader(param)
+		req, err = http.NewRequest(method, requestString, postReader)
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		return []byte{}, err
+	}
+
+	req.Header.Add("Authorization", t.AccessToken.TokenType+" "+t.AccessToken.AccessToken)
+
+	if method == "POST" {
+		req.Header.Add("Content-Type", "application/json")
+	}
+
+	log.Printf("Calling %s \n", req.URL)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return []byte{}, err
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode > 204 {
+		err = fmt.Errorf("Failed API call; status code: %s", resp.Status)
+		return bodyBytes, err
+	}
+
+	return bodyBytes, nil
+}
+
 // GetUserDetails
 
 // GetAccessToken returns the access token for API access
@@ -122,6 +170,44 @@ func (t *Tenant) GetAccessToken() error {
 	resp, err := http.PostForm(authAuthenticatorURL, parameters)
 	if err != nil {
 		fmt.Printf("Error in POSTing the token request: %s\n", err)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return fmt.Errorf("error in reading the response body: %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("error while calling auth endpoint %s: %s", authAuthenticatorURL, string(bodyBytes))
+	}
+
+	at := AccessToken{}
+
+	err = json.Unmarshal(bodyBytes, &at)
+	if err != nil {
+		return fmt.Errorf("Error getting the Access token: %s", err)
+	}
+
+	t.AccessToken = at
+	return nil
+}
+
+// GetGraphAccessToken returns the access token for API access
+func (t *Tenant) GetGraphAccessToken() error {
+
+	authAuthenticatorURL := loginURL + t.TenantDomain + "/oauth2/v2.0/token"
+
+	parameters := url.Values{
+		"client_id":     {t.ClientID},
+		"client_secret": {t.ClientSecret},
+		"grant_type":    {"client_credentials"},
+		"scope":         {"https://graph.microsoft.com/.default"},
+	}
+
+	resp, err := http.PostForm(authAuthenticatorURL, parameters)
+	if err != nil {
+		return fmt.Errorf("Error in POSTing the token request: %s\n", err)
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)

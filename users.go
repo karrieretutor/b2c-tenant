@@ -21,6 +21,7 @@ type User struct {
 	ObjectID       string   `json:"objectId"`
 	DisplayName    string   `json:"displayName"`
 	EmailAddresses []string `json:"otherMails"`
+	ID             string   `json:"id"`
 }
 
 // GetMemberGroupIDs returns a list of group objectIds the user is part of
@@ -93,4 +94,23 @@ func (t Tenant) GetUsers() ([]User, error) {
 	}
 
 	return ur.Users, nil
+}
+
+// GetUser returns a single user's details from the B2C directory
+func (t Tenant) GetUser(objectID string) (User, error) {
+	ar, err := t.callNewGraphAPI("/users/"+objectID, "GET", "")
+	if err != nil {
+		msg := "Error in calling API: " + err.Error()
+		log.Println(msg)
+		return User{}, fmt.Errorf(msg)
+	}
+
+	ur := User{}
+
+	err = json.Unmarshal(ar, &ur)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return ur, nil
 }
