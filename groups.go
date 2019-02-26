@@ -9,7 +9,14 @@ import (
 
 // GroupResponse simply contains the API response (within the 'value' tag) type for our JSON unmarshaler to put the data into
 type GroupResponse struct {
-	Groups []Group `json:"value"`
+	Groups    []Group `json:"value"`
+	ODataNext string  `json:"@odata.nextLink"`
+}
+
+// GroupMemberResponse simply contains the API response (within the 'value' tag) type for our JSON unmarshaler to put the data into
+type GroupMemberResponse struct {
+	GroupMembers []User `json:"value"`
+	ODataNext    string `json:"@odata.nextLink"`
 }
 
 // The Group struct contains the details from the B2C users
@@ -39,6 +46,25 @@ func (t Tenant) GetGroup(GroupObjectID string) (Group, error) {
 	}
 
 	return group, nil
+}
+
+// GetGroupMembers returns a groups's direct members from the B2C directory
+func (t Tenant) GetGroupMembers(objectID string) ([]User, error) {
+	ar, err := t.callNewGraphAPI("/groups/"+objectID+"/members", "GET", "")
+	if err != nil {
+		msg := "Error in calling API: " + err.Error()
+		log.Println(msg)
+		return []User{}, fmt.Errorf(msg)
+	}
+
+	gmr := GroupMemberResponse{}
+
+	err = json.Unmarshal(ar, &gmr)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return gmr.GroupMembers, nil
 }
 
 // GetGroups returns a list of groups in the B2C directory
