@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 )
 
 // The MemberGroupIdsResponse struct contains the list of group objectIds the queried user is part of
@@ -13,7 +14,8 @@ type MemberGroupIdsResponse struct {
 
 // UserResponse simply contains the API response (within the 'value' tag) type for our JSON unmarshaler to put the data into
 type UserResponse struct {
-	Users []User `json:"value"`
+	Users     []User `json:"value"`
+	ODataNext string `json:"@odata.nextLink"`
 }
 
 // The User struct contains the details from the B2C users
@@ -113,4 +115,30 @@ func (t Tenant) GetUser(objectID string) (User, error) {
 	}
 
 	return ur, nil
+}
+
+// SearchUser takes a string and returns all user whom email address
+// contains this string
+func (t Tenant) SearchUser(userEmail string) ([]User, error) {
+	response, err := t.callNewGraphAPI("/users", "GET", "")
+	if err != nil {
+		return nil, fmt.Errorf("error while searching user: %s", err)
+	}
+
+	//fmt.Println(string(response))
+	ur := UserResponse{}
+
+	json.Unmarshal(response, &ur)
+
+	//fmt.Printf("%v", ur)
+
+	foundUsers := []User{}
+
+	for _, user := range ur.Users {
+		if len(user.EmailAddresses) > 0 && strings.Contains(user.EmailAddresses[0], userEmail) {
+			foundUsers = append(foundUsers, user)
+		}
+	}
+
+	return foundUsers, nil
 }

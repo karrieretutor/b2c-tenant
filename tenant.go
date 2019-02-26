@@ -114,8 +114,12 @@ func (t Tenant) callNewGraphAPI(endpoint string, method string, param string) ([
 
 	client := &http.Client{}
 
+	if method == "odatanext" {
+		requestString = endpoint
+	}
+
 	if method == "GET" && param != "" {
-		requestString = requestString + "&" + param
+		requestString = requestString + "?" + param
 	}
 
 	req, err := http.NewRequest(method, requestString, nil)
