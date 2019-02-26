@@ -116,6 +116,7 @@ func (t Tenant) callNewGraphAPI(endpoint string, method string, param string) ([
 
 	if method == "odatanext" {
 		requestString = endpoint
+		method = "GET"
 	}
 
 	if method == "GET" && param != "" {

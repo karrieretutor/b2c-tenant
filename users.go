@@ -125,18 +125,34 @@ func (t Tenant) SearchUser(userEmail string) ([]User, error) {
 		return nil, fmt.Errorf("error while searching user: %s", err)
 	}
 
-	//fmt.Println(string(response))
 	ur := UserResponse{}
 
 	json.Unmarshal(response, &ur)
-
-	//fmt.Printf("%v", ur)
 
 	foundUsers := []User{}
 
 	for _, user := range ur.Users {
 		if len(user.EmailAddresses) > 0 && strings.Contains(user.EmailAddresses[0], userEmail) {
 			foundUsers = append(foundUsers, user)
+		}
+	}
+
+	// as long as we get a new odata.nextLink, continue querying the API
+	for ur.ODataNext != "" {
+		response, err = t.callNewGraphAPI(ur.ODataNext, "odatanext", "")
+		if err != nil {
+			return nil, fmt.Errorf("error while searching user: %s\n%s", err, string(response))
+		}
+
+		// empty ur before each new Unmarshal to make sure ODataNext is cleared before next run
+		ur = UserResponse{}
+
+		json.Unmarshal(response, &ur)
+
+		for _, user := range ur.Users {
+			if len(user.EmailAddresses) > 0 && strings.Contains(user.EmailAddresses[0], userEmail) {
+				foundUsers = append(foundUsers, user)
+			}
 		}
 	}
 
