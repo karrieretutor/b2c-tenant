@@ -53,3 +53,28 @@ func TestSearchUser(t *testing.T) {
 		}
 	}
 }
+
+func TestGetMemberGroupIDs(t *testing.T) {
+	tn := Tenant{}
+	tn.ClientID = os.Getenv("B2C_CLIENT_ID")
+	tn.ClientSecret = os.Getenv("B2C_CLIENT_SECRET")
+	tn.TenantDomain = os.Getenv("B2C_TENANT_DOMAIN")
+
+	if err := tn.GetAccessToken(); err != nil {
+		t.Errorf("Error while obtaining access token: %s", err)
+	}
+
+	userObjectID := os.Getenv("B2C_TESTUSER")
+
+	groups, err := tn.GetMemberGroupIDs(userObjectID)
+	if err != nil {
+		t.Errorf("Error while obtaining member group IDs: %s", err)
+	}
+
+	expectedGroups := os.Getenv("B2C_USERGROUPS")
+	gotGroups := strings.Join(groups, " ")
+
+	if expectedGroups != gotGroups {
+		t.Errorf("Expected groups %q, got %q", expectedGroups, gotGroups)
+	}
+}

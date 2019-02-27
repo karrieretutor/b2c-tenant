@@ -30,3 +30,39 @@ func TestGetGroupMembers(t *testing.T) {
 
 	fmt.Println(members)
 }
+
+func TestAddGroupMember(t *testing.T) {
+	tn := Tenant{}
+	tn.ClientID = os.Getenv("B2C_CLIENT_ID")
+	tn.ClientSecret = os.Getenv("B2C_CLIENT_SECRET")
+	tn.TenantDomain = os.Getenv("B2C_TENANT_DOMAIN")
+
+	if err := tn.GetAccessToken(); err != nil {
+		t.Errorf("Error while obtaining access token: %s", err)
+	}
+
+	userEmail := os.Getenv("B2C_TESTMAIL")
+	aadGroup := os.Getenv("B2C_TESTGROUP")
+
+	if err := tn.AddGroupMember(aadGroup, userEmail); err != nil {
+		t.Errorf("Error while adding user %q to group %q: %s", userEmail, aadGroup, err)
+	}
+}
+
+func TestDeleteGroupMember(t *testing.T) {
+	tn := Tenant{}
+	tn.ClientID = os.Getenv("B2C_CLIENT_ID")
+	tn.ClientSecret = os.Getenv("B2C_CLIENT_SECRET")
+	tn.TenantDomain = os.Getenv("B2C_TENANT_DOMAIN")
+
+	if err := tn.GetAccessToken(); err != nil {
+		t.Errorf("Error while obtaining access token: %s", err)
+	}
+
+	userEmail := os.Getenv("B2C_TESTMAIL")
+	aadGroup := os.Getenv("B2C_TESTGROUP")
+
+	if err := tn.DeleteGroupMember(aadGroup, userEmail); err != nil {
+		t.Errorf("Error while deleting user %q from group %q: %s", userEmail, aadGroup, err)
+	}
+}
