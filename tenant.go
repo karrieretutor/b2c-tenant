@@ -172,30 +172,7 @@ func (t *Tenant) GetAccessToken() error {
 		"grant_type":    {"client_credentials"},
 	}
 
-	resp, err := http.PostForm(authAuthenticatorURL, parameters)
-	if err != nil {
-		fmt.Printf("Error in POSTing the token request: %s\n", err)
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return fmt.Errorf("error in reading the response body: %s", err)
-	}
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("error while calling auth endpoint %s: %s", authAuthenticatorURL, string(bodyBytes))
-	}
-
-	at := AccessToken{}
-
-	err = json.Unmarshal(bodyBytes, &at)
-	if err != nil {
-		return fmt.Errorf("Error getting the Access token: %s", err)
-	}
-
-	t.AccessToken = at
-	return nil
+	return t.getAccessToken(authAuthenticatorURL, parameters)
 }
 
 // GetGraphAccessToken returns the access token for API access
@@ -210,9 +187,13 @@ func (t *Tenant) GetGraphAccessToken() error {
 		"scope":         {"https://graph.microsoft.com/.default"},
 	}
 
+	return t.getAccessToken(authAuthenticatorURL, parameters)
+}
+
+func (t *Tenant) getAccessToken(authAuthenticatorURL string, parameters url.Values) error {
 	resp, err := http.PostForm(authAuthenticatorURL, parameters)
 	if err != nil {
-		return fmt.Errorf("Error in POSTing the token request: %s\n", err)
+		return fmt.Errorf("Error in POSTing the token request: %s", err)
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
