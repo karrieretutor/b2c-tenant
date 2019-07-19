@@ -158,3 +158,52 @@ func (t Tenant) SearchUser(userEmail string) ([]User, error) {
 
 	return foundUsers, nil
 }
+
+//AddUser creates new user through Azure graph API, returns pointer to user object
+//parameters:
+//	email
+//	displayName
+//	passowrd
+func (t Tenant) AddUser(email, displayName, password string) (*User, error) {
+	param := fmt.Sprintf(`
+	{
+		"accountEnabled": true,
+		"signInNames": [             
+			{
+				"type": "emailAddress",
+				"value": "%s"
+			}
+		],
+		"creationType": "LocalAccount", 
+		"displayName": "%s",
+		"otherMails": [
+			"%s"
+		],
+		"passwordProfile": {
+			"password": "%s",
+			"forceChangePasswordNextLogin": false  
+		},
+		"passwordPolicies": "DisablePasswordExpiration"
+	}`, email, displayName, email, password)
+	fmt.Println(param)
+
+	response, err := t.callGraphAPI("/users", "1.6", "POST", param)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating user %s: \n%s\n%s",
+			displayName, err, string(response))
+	}
+
+	user := User{}
+	json.Unmarshal(response, &user)
+	return &user, nil
+}
+
+//DeleteUser deletes user with given objecId
+func (t Tenant) DeleteUser(objectID string) error {
+	endpoint := fmt.Sprintf("/users/%s", objectID)
+	if _, err := t.callGraphAPI(endpoint, "1.6", "DELETE", ""); err != nil {
+		return fmt.Errorf("Error while deleting user %s:\n%s",
+			objectID, err)
+	}
+	return nil
+}
